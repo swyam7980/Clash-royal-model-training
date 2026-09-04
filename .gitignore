@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+
+# Trained models / weights
+TrainedWeights/
+
+# Generated TensorFlow/Keras models
+Resources/Models/Saved/
+
+# Training data
+Resources/Models/TrainingData/
+
+# Recorded human-game sessions
+Resources/Data/HumanGames/
