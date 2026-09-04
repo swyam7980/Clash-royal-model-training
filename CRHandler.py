@@ -18,12 +18,15 @@ from collections import OrderedDict
 
 class Handler:
     """A class used to interact with a bluestacks instance of Clash Royale"""
-    def __init__(self, spells=False):
+    def __init__(self, spells=False, load_elixir_model=True):
         def create_elixir_model():
             self.elixir_model = ElixirModel()
             self.elixir_model.load_model()
 
-        create_elixir_model()
+        if load_elixir_model:
+            create_elixir_model()
+        else:
+            self.elixir_model = None
 
         self.top_right = (self.get_window_dimensions()[0], self.get_window_dimensions()[1])
         self.scalars = self.get_window_scalars()

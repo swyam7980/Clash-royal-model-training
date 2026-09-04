@@ -31,7 +31,7 @@ HAND_SLOT_1_BOX = (58, 350, 93, 393)
 
 def capture_deck(name):
     os.makedirs(os.path.join(DECKS_DIR, name), exist_ok=True)
-    handler = Handler()
+    handler = Handler(load_elixir_model=False)
 
     print("\nMake sure BlueStacks + Clash Royale is visible on screen.")
     print("For each card: put it in HAND SLOT 1 (leftmost slot), then type its name here and press Enter.")

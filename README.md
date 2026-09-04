@@ -180,9 +180,4 @@ python run.py --model my_deck_v1
 
 Keep BlueStacks open and unobstructed while recording or running the model.
 
-
-
-
-
-
-
+`(Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& d:\Real-Time-Strategy-RL-Clash-Royale\venv\Scripts\Activate.ps1)`

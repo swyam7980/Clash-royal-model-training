@@ -15,9 +15,6 @@ env/
 # Trained models / weights
 TrainedWeights/
 
-# Generated TensorFlow/Keras models
-Resources/Models/Saved/
-
 # Training data
 Resources/Models/TrainingData/
 
