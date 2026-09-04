@@ -498,13 +498,34 @@ class Handler:
         card4 = full_image.crop((195, 350, 230, 393))
 
         cards = (card1, card2, card3, card4)
+
+        # Filenames ending in "_evo" (e.g. elite_barbarians_evo.png) are just a
+        # different in-hand icon for the SAME card once it's evolved - they
+        # should map to the same one-hot class as their base card
+        # (elite_barbarians.png), not get their own class. This keeps the
+        # identity matrix sized to the number of *distinct cards*, regardless
+        # of how many icon variants/files exist for them.
+        card_filenames = sorted(os.listdir("Resources/Cards"))
+
+        def base_card_name(filename):
+            name = os.path.splitext(filename)[0]
+            if name.endswith("_evo"):
+                name = name[:-len("_evo")]
+            return name
+
+        distinct_card_names = []
+        for fname in card_filenames:
+            name = base_card_name(fname)
+            if name not in distinct_card_names:
+                distinct_card_names.append(name)
+
         card_images = [
-            cv2.cvtColor(np.array(Image.open(f"Resources/Cards/{card}"), dtype=np.float32), cv2.COLOR_BGR2GRAY) for card
-            in os.listdir("Resources/Cards")]
+            cv2.cvtColor(np.array(Image.open(f"Resources/Cards/{fname}"), dtype=np.float32), cv2.COLOR_BGR2GRAY)
+            for fname in card_filenames]
 
         playable_cards = []
         valids = []
-        identity = np.identity(9)
+        identity = np.identity(len(distinct_card_names) + 1)  # +1 for "no card matched"
         for num in range(1, 5):
             card = cards[num - 1]
             card = np.array(card, dtype=np.float32)
@@ -515,7 +536,8 @@ class Handler:
                 matches = cv2.matchTemplate(card[10:30,10:40] / 255, cc / 255, cv2.TM_CCOEFF_NORMED)
                 _, m, _, _ = cv2.minMaxLoc(matches)
                 if m > 0.7:
-                    playable_cards.append([num, identity[c_num + 1]])
+                    class_idx = distinct_card_names.index(base_card_name(card_filenames[c_num]))
+                    playable_cards.append([num, identity[class_idx + 1]])
                     valids.append(1)
                     added = True
             if not added:
