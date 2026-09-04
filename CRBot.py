@@ -71,12 +71,42 @@ class CRBot:
             continue
 
     @staticmethod
-    def leave_game(env):
-        """Leave a Clash Royale game."""
-        wait_start_time = time.time()
+    def leave_game(env, max_attempts=6):
+        """
+        Leave a Clash Royale game.
+
+        Gives up loudly instead of looping forever if at_home_screen() never
+        returns True. The most likely cause is that Resources/Templates/HomeScreen.png
+        (or the hardcoded click coordinates in Handler.leave_game()) no longer
+        match the current Clash Royale UI - in that case this will keep
+        clicking a coordinate that may not do what it used to (e.g. it could
+        land on "Battle Again" and start a real match instead of returning
+        home), so we cap the retries and bail out with a clear warning rather
+        than spinning on it silently forever.
+
+        :param env: A Handler object
+        :param max_attempts: How many click+wait cycles to try before giving up
+        :return: bool - True if we confirmed we're at the home screen, False if we gave up
+        """
+        attempts = 0
         while not env.at_home_screen():
+            attempts += 1
+            if attempts > max_attempts:
+                print(f"WARNING: leave_game() couldn't confirm the home screen after "
+                      f"{max_attempts} attempts. Resources/Templates/HomeScreen.png "
+                      f"(or the hardcoded button coordinates in Handler.leave_game()/"
+                      f"start_training_game()) are likely out of date for your current "
+                      f"Clash Royale UI. Saving a debug screenshot to "
+                      f"Visualizations/Image.png - compare it against HomeScreen.png "
+                      f"and recapture as needed.")
+                try:
+                    env.save_current_frame()
+                except Exception as e:
+                    print(f"  (couldn't save debug frame either: {e})")
+                return False
             env.leave_game()
             time.sleep(10)
+        return True
     
     def print_episode_stats(self, ep_num, duration, reward, pc, ec):
         """Print episode stats."""
@@ -99,7 +129,10 @@ class CRBot:
             total_reward += reward
             state = new_state
 
-        self.leave_game(env)
+        left_cleanly = self.leave_game(env)
+        if not left_cleanly:
+            print("Continuing anyway - if the bot behaves oddly on the next episode, "
+                  "manually confirm you're back at the home screen before it continues.")
         return duration, total_reward, pc, ec
 
     def play(self, episodes=1, learn=True, spells=False, load=True, save=True):
@@ -131,9 +164,3 @@ class CRBot:
             agent.train()
             if total_reward > best_reward and save: 
                 agent.save()
-
-            
-
-
-
-

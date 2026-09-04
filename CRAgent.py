@@ -6,6 +6,23 @@ from CRModel import StateAutoEncoder, Critic, OriginActor, TileActor, CardActor
 from ActionMapper import ActionMapper
 from Memory import Memory
 
+# Elixir cost of each card in the active deck. Keys must match the base card
+# filenames (without "_evo" suffix, without extension) in Resources/Cards/.
+# Used as a hard safety gate in Agent.act() so the bot can never be told to
+# play a card it can't afford, regardless of what the (possibly undertrained)
+# policy network predicts. Update this if you switch decks.
+CARD_COSTS = {
+    "barbarians": 5,
+    "cannon": 3,
+    "elite_barbarians": 6,
+    "mini_pekka": 4,
+    "musketeer": 4,
+    "skeleton_dragon": 4,
+    "valkarie": 4,
+    "wizard": 5,
+}
+
+
 class Agent():
     """A Proximal Policy Gradient Agent"""
     def __init__(self, origin_lr=1e-3, shell_lr=1e-3, card_lr=1e-3, ae_lr=3e-6, gamma=0.95, lam=0.95, clip=0.2, epochs=10, load=False) -> None:
@@ -92,7 +109,38 @@ class Agent():
         value = self.card_critic(encoded_state)
 
         return card, value, card_probs
-        
+
+    def card_name_for_action(self, env, action, cards):
+        """
+        Resolves the card name an action would play, using the same
+        distinct-card ordering CRHandler.get_cards() used to build the
+        one-hot vectors.
+
+        :param env: A Handler object (needed for get_distinct_card_names())
+        :param action: The action dict returned by ActionMapper.get_action()
+        :param cards: state['card_data'] - list of [slot_num, one_hot_vector]
+        :return: str or None - the base card name, or None if it can't be resolved
+        """
+        if action is None or action.get("card_number") is None:
+            return None
+
+        slot = action["card_number"]
+        one_hot = None
+        for card_slot, card_vec in cards:
+            if card_slot - 1 == slot:
+                one_hot = card_vec
+                break
+        if one_hot is None:
+            return None
+
+        class_idx = int(np.argmax(one_hot)) - 1  # -1 to undo the "no card" offset
+        if class_idx < 0:
+            return None  # this slot matched the "no card" class
+
+        distinct_card_names = env.get_distinct_card_names()
+        if class_idx >= len(distinct_card_names):
+            return None
+        return distinct_card_names[class_idx]
 
     def act(self, env, state):
         """
@@ -111,6 +159,19 @@ class Agent():
         choices = state["choice_data"]
         cards = state['card_data']
         action = self.get_action(action_components, choices, cards)
+
+        # Hard elixir gate: never let the bot try to play a card it can't
+        # afford, regardless of what the (possibly undertrained) policy
+        # predicts. This doesn't rely on the model having learned elixir
+        # management - it's enforced every step.
+        if action is not None and action.get("card_number") is not None:
+            card_name = self.card_name_for_action(env, action, cards)
+            cost = CARD_COSTS.get(card_name) if card_name else None
+            if cost is not None:
+                elixir = state["elixir_data"]
+                if elixir < cost:
+                    action = None
+
         env.act(action)
 
         return (origin, shell, card), (origin_prob, shell_prob, card_prob), (origin_val, shell_val, card_val)
@@ -222,6 +283,4 @@ class Agent():
     def train(self):
         for _ in range(self.epochs):
             self.learn()
-        self.mem.clear() 
-
-        
+        self.mem.clear()

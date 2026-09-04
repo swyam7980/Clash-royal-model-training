@@ -62,6 +62,15 @@ def ensure_checkpoint_dirs(path):
         os.makedirs(os.path.join(path, sub), exist_ok=True)
 
 
+def checkpoint_has_policy_weights(path):
+    required = (
+        "OriginWeights/origin_actor.index",
+        "ShellWeights/shell_actor.index",
+        "CardWeights/card_actor.index",
+    )
+    return all(os.path.exists(os.path.join(path, file_name)) for file_name in required)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", required=True, help="new checkpoint folder name under TrainedWeights/")
@@ -82,10 +91,19 @@ def main():
         if args.init_from:
             init_path = f"TrainedWeights/{args.init_from}/"
             print(f"Initializing from {init_path}")
+            if not checkpoint_has_policy_weights(init_path):
+                raise FileNotFoundError(
+                    f"Checkpoint '{init_path}' is missing policy weights. "
+                    "Use a valid checkpoint name or omit --init_from to train from scratch."
+                )
             agent.load(path=init_path)
         else:
-            print("Initializing from the repo's shipped base weights (TrainedWeights/)")
-            agent.load(path="TrainedWeights/")
+            base_path = "TrainedWeights/"
+            if checkpoint_has_policy_weights(base_path):
+                print("Initializing from the repo's shipped base weights (TrainedWeights/)")
+                agent.load(path=base_path)
+            else:
+                print("No base policy weights found; initializing fresh models from scratch.")
 
         # Rebuild fresh optimizers after loading. load_weights() can drag in stale/
         # mismatched optimizer-slot variables from the checkpoint (harmless model

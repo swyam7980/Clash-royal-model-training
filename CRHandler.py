@@ -482,6 +482,39 @@ class Handler:
 
         return choice_data
 
+    # Card identity helpers
+    @staticmethod
+    def base_card_name(filename):
+        """
+        Strips a filename down to its base card name, treating "_evo" variants
+        (e.g. elite_barbarians_evo.png) as the SAME card as their base file
+        (elite_barbarians.png).
+
+        :param filename: A card image filename (with or without extension)
+        :return: str - the base card name
+        """
+        name = os.path.splitext(filename)[0]
+        if name.endswith("_evo"):
+            name = name[:-len("_evo")]
+        return name
+
+    def get_distinct_card_names(self):
+        """
+        Returns the list of distinct card names currently in Resources/Cards/,
+        in the same order used to build the one-hot identity matrix in
+        get_cards(). Index i in this list corresponds to identity row i+1
+        (row 0 is reserved for "no card matched").
+
+        :return: distinct_card_names (list[str])
+        """
+        card_filenames = sorted(os.listdir("Resources/Cards"))
+        distinct_card_names = []
+        for fname in card_filenames:
+            name = self.base_card_name(fname)
+            if name not in distinct_card_names:
+                distinct_card_names.append(name)
+        return distinct_card_names
+
     def get_cards(self, frame):
         """
         Returns a list of the available cards.
@@ -506,18 +539,7 @@ class Handler:
         # identity matrix sized to the number of *distinct cards*, regardless
         # of how many icon variants/files exist for them.
         card_filenames = sorted(os.listdir("Resources/Cards"))
-
-        def base_card_name(filename):
-            name = os.path.splitext(filename)[0]
-            if name.endswith("_evo"):
-                name = name[:-len("_evo")]
-            return name
-
-        distinct_card_names = []
-        for fname in card_filenames:
-            name = base_card_name(fname)
-            if name not in distinct_card_names:
-                distinct_card_names.append(name)
+        distinct_card_names = self.get_distinct_card_names()
 
         card_images = [
             cv2.cvtColor(np.array(Image.open(f"Resources/Cards/{fname}"), dtype=np.float32), cv2.COLOR_BGR2GRAY)
@@ -536,7 +558,7 @@ class Handler:
                 matches = cv2.matchTemplate(card[10:30,10:40] / 255, cc / 255, cv2.TM_CCOEFF_NORMED)
                 _, m, _, _ = cv2.minMaxLoc(matches)
                 if m > 0.7:
-                    class_idx = distinct_card_names.index(base_card_name(card_filenames[c_num]))
+                    class_idx = distinct_card_names.index(self.base_card_name(card_filenames[c_num]))
                     playable_cards.append([num, identity[class_idx + 1]])
                     valids.append(1)
                     added = True
