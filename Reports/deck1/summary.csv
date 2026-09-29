@@ -1,0 +1,11 @@
+metric,value
+training_samples,53
+test_samples,13
+overall_full_action_accuracy,0.1538
+card_identity_accuracy,0.3077
+Origin tile (48 tiles + no-action)_top1_accuracy,0.3846
+Origin tile (48 tiles + no-action)_top3_accuracy,0.8462
+Shell tile (1 of 9)_top1_accuracy,0.5385
+Shell tile (1 of 9)_top3_accuracy,0.9231
+Hand slot (1 of 4)_top1_accuracy,0.3077
+Hand slot (1 of 4)_top3_accuracy,0.8462

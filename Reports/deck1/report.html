@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>deck1 - Model Evaluation Report</title>
+<style>
+    body { font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 40px; color: #222; background: #fafafa; }
+    h1 { margin-bottom: 4px; }
+    .meta { color: #666; margin-bottom: 32px; font-size: 14px; }
+    .summary-cards { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+    .card { background: white; border-radius: 10px; padding: 18px 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); min-width: 170px; }
+    .card .value { font-size: 28px; font-weight: 700; color: #2b5797; }
+    .card .label { font-size: 13px; color: #666; margin-top: 4px; }
+    table { border-collapse: collapse; width: 100%; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 12px;}
+    th, td { padding: 10px 16px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #2b5797; color: white; font-weight: 600; }
+    .chart { background: white; padding: 16px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 28px; }
+    .chart img { width: 100%; max-width: 720px; display: block; margin: 0 auto; }
+    .note { font-size: 13px; color: #888; margin: 8px 0 28px; }
+</style>
+</head>
+<body>
+    <h1>Model Evaluation: deck1</h1>
+    <div class="meta">Generated 2026-09-05 13:48 &middot; data source: Resources/Data/HumanGames</div>
+
+    <div class="summary-cards">
+        <div class="card"><div class="value">53</div><div class="label">Training samples</div></div>
+        <div class="card"><div class="value">13</div><div class="label">Held-out test samples</div></div>
+        <div class="card"><div class="value">15.4%</div><div class="label">Full-action match rate (all 3 heads correct)</div></div>
+        <div class="card"><div class="value">30.8%</div><div class="label">Card identity accuracy</div></div>
+    </div>
+
+    <table>
+        <tr><th>Model head</th><th>Test samples</th><th>Top-1 accuracy</th><th>Top-3 accuracy</th></tr>
+        
+        <tr>
+            <td>Origin tile (48 tiles + no-action)</td>
+            <td>13</td>
+            <td>38.5%</td>
+            <td>84.6%</td>
+        </tr>
+        <tr>
+            <td>Shell tile (1 of 9)</td>
+            <td>13</td>
+            <td>53.8%</td>
+            <td>92.3%</td>
+        </tr>
+        <tr>
+            <td>Hand slot (1 of 4)</td>
+            <td>13</td>
+            <td>30.8%</td>
+            <td>84.6%</td>
+        </tr>
+        <tr>
+            <td>Card identity (derived)</td>
+            <td>13</td>
+            <td>30.8%</td>
+            <td>-</td>
+        </tr>
+    </table>
+    <div class="note">"Accuracy" = does the model's current policy (evaluated deterministically, no exploration)
+    pick the same tile/slot/card you actually picked, on data it was <b>not</b> trained on. This measures
+    imitation of your recorded play, not win rate against an opponent. "Card identity" is derived by
+    cross-referencing the predicted/actual hand slot against that sample's own on-screen cards, since the
+    model's card head predicts a hand-slot position (1-4), not a fixed card identity.</div>
+
+    <div class="chart"><img src="head_accuracy.png"></div>
+    <div class="chart"><img src="card_identity_confusion.png"></div>
+    <div class="chart"><img src="dataset_composition.png"></div>
+    <div class="chart"><img src="sessions_over_time.png"></div>
+</body>
+</html>
